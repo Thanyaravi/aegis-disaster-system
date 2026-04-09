@@ -30,6 +30,9 @@ AEGIS-DISASTER-SYSTEM/
 │   │   └── yolo_engine.py       # YOLO detection engine
 │   ├── main.py                 # Simulation loop
 │   └── requirements.txt
+|
+└──docs/
+|   └── index.html
 └── frontend/
     └── aegis-ui/
         ├── src/
