@@ -1,0 +1,13 @@
+.radar-component {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.radar-canvas {
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 230, 0.5));
+}
