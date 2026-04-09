@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEGIS — Autonomous Emergency Grid Intelligence System</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --c-bg:#040810;
+    --c-bg2:#070d1a;
+    --c-panel:#0a1220;
+    --c-border:#0f2a4a;
+    --c-border2:#1a4a7a;
+    --c-cyan:#00d4ff;
+    --c-cyan2:#00a8cc;
+    --c-amber:#f5a623;
+    --c-red:#ff3c3c;
+    --c-green:#00ff88;
+    --c-text:#b8d4e8;
+    --c-text2:#5a8ab0;
+    --c-text3:#2a5a7a;
+    --font-hud:'Share Tech Mono',monospace;
+    --font-title:'Orbitron',sans-serif;
+    --font-body:'Rajdhani',sans-serif;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--c-bg);
+    color:var(--c-text);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+
+  /* SCAN LINE OVERLAY */
+  body::after{
+    content:'';
+    position:fixed;
+    inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.015) 2px,rgba(0,212,255,0.015) 4px);
+    pointer-events:none;
+    z-index:9999;
+  }
+
+  /* GRID BACKGROUND */
+  .grid-bg{
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size:60px 60px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* NAV */
+  nav{
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:1000;
+    background:rgba(4,8,16,0.9);
+    border-bottom:1px solid var(--c-border);
+    backdrop-filter:blur(12px);
+    padding:0 2rem;
+    height:60px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .nav-logo{
+    font-family:var(--font-title);
+    font-size:18px;
+    font-weight:900;
+    color:var(--c-cyan);
+    letter-spacing:0.15em;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .nav-logo .logo-icon{
+    width:32px;height:32px;
+    border:1.5px solid var(--c-cyan);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    animation:pulse-border 2s ease-in-out infinite;
+  }
+  .nav-links{display:flex;gap:2rem;list-style:none}
+  .nav-links a{
+    font-family:var(--font-hud);
+    font-size:11px;
+    color:var(--c-text2);
+    text-decoration:none;
+    letter-spacing:0.1em;
+    transition:color 0.2s;
+  }
+  .nav-links a:hover{color:var(--c-cyan)}
+  .nav-status{
+    font-family:var(--font-hud);
+    font-size:11px;
+    color:var(--c-green);
+    display:flex;align-items:center;gap:8px;
+  }
+  .status-dot{
+    width:6px;height:6px;
+    border-radius:50%;
+    background:var(--c-green);
+    animation:blink 1.4s ease-in-out infinite;
+  }
+
+  /* HERO */
+  .hero{
+    position:relative;
+    z-index:1;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:80px 2rem 4rem;
+    overflow:hidden;
+  }
+  .hero-glow{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:600px;height:600px;
+    background:radial-gradient(ellipse,rgba(0,212,255,0.07) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .hero-tag{
+    font-family:var(--font-hud);
+    font-size:11px;
+    color:var(--c-cyan2);
+    letter-spacing:0.25em;
+    border:1px solid var(--c-border2);
+    padding:6px 16px;
+    margin-bottom:2rem;
+    background:rgba(0,212,255,0.04);
+    animation:fadeInDown 0.6s ease both;
+  }
+  .hero h1{
+    font-family:var(--font-title);
+    font-size:clamp(2.4rem,6vw,5rem);
+    font-weight:900;
+    color:#fff;
+    line-height:1.05;
+    letter-spacing:0.05em;
+    margin-bottom:0.5rem;
+    animation:fadeInDown 0.7s 0.1s ease both;
+  }
+  .hero h1 span{color:var(--c-cyan)}
+  .hero-sub{
+    font-family:var(--font-title);
+    font-size:clamp(0.75rem,1.5vw,1rem);
+    color:var(--c-text2);
+    letter-spacing:0.3em;
+    font-weight:400;
+    margin-bottom:2rem;
+    animation:fadeInDown 0.7s 0.2s ease both;
+  }
+  .hero-desc{
+    max-width:580px;
+    font-size:1.1rem;
+    color:var(--c-text);
+    line-height:1.7;
+    margin-bottom:3rem;
+    animation:fadeInDown 0.7s 0.3s ease both;
+  }
+  .hero-btns{
+    display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;
+    animation:fadeInDown 0.7s 0.4s ease both;
+  }
+  .btn-primary{
+    font-family:var(--font-hud);
+    font-size:12px;
+    letter-spacing:0.15em;
+    padding:14px 32px;
+    background:var(--c-cyan);
+    color:#040810;
+    border:none;
+    cursor:pointer;
+    text-decoration:none;
+    transition:all 0.2s;
+    clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+    font-weight:700;
+  }
+  .btn-primary:hover{background:#fff;transform:translateY(-2px)}
+  .btn-outline{
+    font-family:var(--font-hud);
+    font-size:12px;
+    letter-spacing:0.15em;
+    padding:13px 32px;
+    background:transparent;
+    color:var(--c-cyan);
+    border:1px solid var(--c-cyan);
+    cursor:pointer;
+    text-decoration:none;
+    transition:all 0.2s;
+    clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+  }
+  .btn-outline:hover{background:rgba(0,212,255,0.08);transform:translateY(-2px)}
+
+  /* RADAR ANIMATION */
+  .radar-wrap{
+    position:relative;
+    width:280px;height:280px;
+    margin:3rem auto 2rem;
+    animation:fadeIn 1s 0.5s ease both;
+  }
+  .radar-ring{
+    position:absolute;
+    border-radius:50%;
+    border:1px solid rgba(0,212,255,0.2);
+  }
+  .radar-ring:nth-child(1){inset:0}
+  .radar-ring:nth-child(2){inset:20%}
+  .radar-ring:nth-child(3){inset:40%}
+  .radar-ring:nth-child(4){inset:60%}
+  .radar-crosshair{position:absolute;inset:0}
+  .radar-crosshair::before,.radar-crosshair::after{
+    content:'';
+    position:absolute;
+    background:rgba(0,212,255,0.15);
+  }
+  .radar-crosshair::before{top:50%;left:0;right:0;height:1px;transform:translateY(-50%)}
+  .radar-crosshair::after{left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%)}
+  .radar-sweep{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    overflow:hidden;
+  }
+  .radar-sweep::after{
+    content:'';
+    position:absolute;
+    top:50%;left:50%;
+    width:50%;height:50%;
+    transform-origin:0% 100%;
+    background:conic-gradient(from 0deg,transparent 60%,rgba(0,212,255,0.35) 100%);
+    animation:sweep 3s linear infinite;
+  }
+  .radar-blip{
+    position:absolute;
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--c-red);
+    box-shadow:0 0 8px var(--c-red);
+    animation:blip-pulse 2s ease-in-out infinite;
+  }
+  .radar-blip.fire{top:30%;left:55%;background:var(--c-red);box-shadow:0 0 8px var(--c-red)}
+  .radar-blip.flood{top:60%;left:25%;background:#4488ff;box-shadow:0 0 8px #4488ff;animation-delay:0.5s}
+  .radar-blip.drone{top:45%;left:48%;background:var(--c-cyan);box-shadow:0 0 8px var(--c-cyan);animation-delay:1s}
+
+  /* STATS BAR */
+  .stats-bar{
+    position:relative;z-index:1;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:1px;
+    background:var(--c-border);
+    border-top:1px solid var(--c-border);
+    border-bottom:1px solid var(--c-border);
+  }
+  .stat-item{
+    background:var(--c-bg2);
+    padding:2rem 1.5rem;
+    text-align:center;
+  }
+  .stat-val{
+    font-family:var(--font-title);
+    font-size:2rem;
+    font-weight:900;
+    color:var(--c-cyan);
+    display:block;
+    line-height:1;
+    margin-bottom:0.5rem;
+  }
+  .stat-label{
+    font-family:var(--font-hud);
+    font-size:11px;
+    color:var(--c-text2);
+    letter-spacing:0.15em;
+  }
+
+  /* SECTION */
+  section{
+    position:relative;z-index:1;
+    padding:5rem 2rem;
+    max-width:1100px;
+    margin:0 auto;
+  }
+  .section-head{
+    text-align:center;
+    margin-bottom:3.5rem;
+  }
+  .section-eyebrow{
+    font-family:var(--font-hud);
+    font-size:11px;
+    color:var(--c-cyan);
+    letter-spacing:0.25em;
+    margin-bottom:1rem;
+    display:block;
+  }
+  .section-title{
+    font-family:var(--font-title);
+    font-size:clamp(1.6rem,3vw,2.4rem);
+    font-weight:700;
+    color:#fff;
+    letter-spacing:0.05em;
+  }
+  .section-title span{color:var(--c-cyan)}
+
+  /* FEATURES GRID */
+  .features{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5px;
+    background:var(--c-border);
+    border:1px solid var(--c-border);
+  }
+  .feature-card{
+    background:var(--c-panel);
+    padding:2rem;
+    position:relative;
+    overflow:hidden;
+    transition:background 0.3s;
+  }
+  .feature-card::before{
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;height:2px;
+    background:var(--c-accent,var(--c-cyan));
+    opacity:0;
+    transition:opacity 0.3s;
+  }
+  .feature-card:hover{background:#0c1828}
+  .feature-card:hover::before{opacity:1}
+  .feature-icon{font-size:28px;margin-bottom:1rem;display:block;line-height:1}
+  .feature-title{
+    font-family:var(--font-title);
+    font-size:0.95rem;
+    font-weight:700;
+    color:#fff;
+    letter-spacing:0.1em;
+    margin-bottom:0.75rem;
+  }
+  .feature-desc{font-size:0.95rem;color:var(--c-text2);line-height:1.6}
+  .feature-tag{
+    display:inline-block;
+    font-family:var(--font-hud);
+    font-size:10px;
+    color:var(--c-cyan);
+    border:1px solid var(--c-border2);
+    padding:3px 8px;
+    margin-top:1rem;
+    letter-spacing:0.1em;
+  }
+
+  /* ARCH DIAGRAM */
+  .arch{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:1rem;
+    margin-top:2rem;
+    align-items:start;
+  }
+  .arch-col{display:flex;flex-direction:column;gap:0.75rem}
+  .arch-col-title{
+    font-family:var(--font-hud);
+    font-size:10px;
+    color:var(--c-cyan);
+    letter-spacing:0.2em;
+    border-bottom:1px solid var(--c-border2);
+    padding-bottom:8px;
+    margin-bottom:4px;
+  }
+  .arch-box{
+    background:var(--c-panel);
+    border:1px solid var(--c-border);
+    padding:10px 14px;
+    font-family:var(--font-hud);
+    font-size:12px;
+    color:var(--c-text);
+    border-left:3px solid var(--c-accent,var(--c-border2));
+  }
+  .arch-box.highlight{color:var(--c-cyan);border-color:var(--c-border2);border-left-color:var(--c-cyan)}
+  .arch-arrow{
+    display:flex;align-items:center;justify-content:center;
+    color:var(--c-text3);
+    font-family:var(--font-hud);
+    font-size:20px;
+    padding-top:40px;
+  }
+
+  /* API TABLE */
+  .api-table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:var(--font-hud);
+    font-size:13px;
+    margin-top:2rem;
+  }
+  .api-table th{
+    background:var(--c-panel);
+    color:var(--c-cyan);
+    text-align:left;
+    padding:12px 16px;
+    font-size:11px;
+    letter-spacing:0.15em;
+    border-bottom:1px solid var(--c-border2);
+  }
+  .api-table td{
+    padding:12px 16px;
+    border-bottom:1px solid var(--c-border);
+    color:var(--c-text);
+    vertical-align:top;
+  }
+  .api-table tr:hover td{background:rgba(0,212,255,0.03)}
+  .method{font-weight:700;padding:3px 8px;font-size:11px;border-radius:3px}
+  .method.get{background:rgba(0,255,136,0.1);color:var(--c-green)}
+  .method.post{background:rgba(245,166,35,0.1);color:var(--c-amber)}
+  .endpoint{color:var(--c-cyan)}
+
+  /* DRONE STATUS */
+  .drones{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2rem}
+  .drone-card{
+    background:var(--c-panel);
+    border:1px solid var(--c-border);
+    padding:1.5rem;
+    position:relative;
+    overflow:hidden;
+  }
+  .drone-card::after{
+    content:'';
+    position:absolute;
+    bottom:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--c-cyan),transparent);
+    opacity:0.5;
+  }
+  .drone-id{font-family:var(--font-hud);font-size:11px;color:var(--c-text2);letter-spacing:0.15em;margin-bottom:8px}
+  .drone-status{font-family:var(--font-title);font-size:1rem;font-weight:700;color:#fff;margin-bottom:12px}
+  .drone-stat{
+    display:flex;justify-content:space-between;
+    font-family:var(--font-hud);font-size:11px;color:var(--c-text2);
+    padding:4px 0;border-bottom:1px solid var(--c-border);
+  }
+  .drone-stat span{color:var(--c-cyan)}
+  .drone-badge{
+    display:inline-block;
+    font-family:var(--font-hud);font-size:10px;
+    padding:3px 8px;margin-top:10px;letter-spacing:0.1em;
+  }
+  .badge-active{background:rgba(0,255,136,0.1);color:var(--c-green);border:1px solid rgba(0,255,136,0.3)}
+  .badge-en-route{background:rgba(245,166,35,0.1);color:var(--c-amber);border:1px solid rgba(245,166,35,0.3)}
+  .badge-idle{background:rgba(0,212,255,0.08);color:var(--c-cyan2);border:1px solid var(--c-border2)}
+
+  /* CTA */
+  .cta-section{
+    position:relative;z-index:1;
+    background:var(--c-panel);
+    border-top:1px solid var(--c-border);
+    border-bottom:1px solid var(--c-border);
+    padding:5rem 2rem;
+    text-align:center;
+    overflow:hidden;
+  }
+  .cta-section::before{
+    content:'';
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:800px;height:400px;
+    background:radial-gradient(ellipse,rgba(0,212,255,0.05) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .cta-title{font-family:var(--font-title);font-size:clamp(1.5rem,3vw,2.2rem);font-weight:900;color:#fff;letter-spacing:0.05em;margin-bottom:1.5rem}
+  .cta-desc{max-width:500px;margin:0 auto 2.5rem;color:var(--c-text2);font-size:1rem}
+  .cta-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .cta-link-card{
+    background:var(--c-bg);border:1px solid var(--c-border2);
+    padding:1.25rem 2rem;text-decoration:none;
+    display:flex;align-items:center;gap:12px;
+    transition:all 0.25s;color:var(--c-text);
+  }
+  .cta-link-card:hover{border-color:var(--c-cyan);background:rgba(0,212,255,0.04);color:#fff;transform:translateY(-3px)}
+  .cta-link-card .link-icon{font-size:20px;line-height:1}
+  .cta-link-card .link-label{font-family:var(--font-hud);font-size:12px;letter-spacing:0.1em;display:block;color:inherit}
+  .cta-link-card .link-sub{font-size:11px;color:var(--c-text2);margin-top:2px;font-family:var(--font-hud)}
+
+  /* FOOTER */
+  footer{
+    position:relative;z-index:1;
+    background:var(--c-bg);
+    border-top:1px solid var(--c-border);
+    padding:2rem;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+  }
+  .footer-logo{font-family:var(--font-title);font-size:14px;color:var(--c-cyan);letter-spacing:0.15em;font-weight:900}
+  .footer-text{font-family:var(--font-hud);font-size:11px;color:var(--c-text2);letter-spacing:0.1em}
+  .footer-links{display:flex;gap:1.5rem}
+  .footer-links a{font-family:var(--font-hud);font-size:11px;color:var(--c-text2);text-decoration:none;letter-spacing:0.1em;transition:color 0.2s}
+  .footer-links a:hover{color:var(--c-cyan)}
+
+  /* ANIMATIONS */
+  @keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+  @keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.4)}50%{box-shadow:0 0 0 6px rgba(0,212,255,0)}}
+  @keyframes blip-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes fadeInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes ticker{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+
+  /* TICKER */
+  .ticker-wrap{
+    position:relative;z-index:1;
+    background:rgba(0,212,255,0.07);
+    border-top:1px solid var(--c-border2);
+    border-bottom:1px solid var(--c-border2);
+    padding:8px 0;overflow:hidden;white-space:nowrap;
+  }
+  .ticker{
+    display:inline-block;
+    animation:ticker 28s linear infinite;
+    font-family:var(--font-hud);font-size:12px;color:var(--c-cyan);letter-spacing:0.1em;
+  }
+  .ticker span{margin:0 3rem;color:var(--c-text2)}
+
+  /* MOBILE */
+  @media(max-width:700px){
+    .arch{grid-template-columns:1fr}.arch-arrow{display:none}
+    .drones{grid-template-columns:1fr}
+    nav .nav-links{display:none}
+    footer{flex-direction:column;text-align:center}
+    .footer-links{flex-wrap:wrap;justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-icon">▲</div>
+    AEGIS
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">CAPABILITIES</a></li>
+    <li><a href="#architecture">ARCHITECTURE</a></li>
+    <li><a href="#api">API REFERENCE</a></li>
+    <li><a href="#deploy">DEPLOY</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM OPERATIONAL
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap" style="margin-top:60px">
+  <div class="ticker">
+    AEGIS ACTIVE <span>⬥</span> DRONE-01 EN-ROUTE TO GRID 5,7 <span>⬥</span> FIRE DETECTED AT [3,8] <span>⬥</span> WEBSOCKET CONNECTED <span>⬥</span> A* PATH CALCULATED <span>⬥</span> DRONE-02 IDLE <span>⬥</span> FLOOD ALERT CLEARED <span>⬥</span> SOS RECEIVED AT [2,6] <span>⬥</span> SIMULATION STEP 142 <span>⬥</span> ALL SYSTEMS NOMINAL
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-tag">AUTONOMOUS EMERGENCY GRID INTELLIGENCE SYSTEM</div>
+  <h1>AEGIS<br><span>DISASTER RESPONSE</span></h1>
+  <div class="hero-sub">AI-POWERED DRONE COORDINATION PLATFORM</div>
+
+  <div class="radar-wrap">
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-crosshair"></div>
+    <div class="radar-sweep"></div>
+    <div class="radar-blip fire"></div>
+    <div class="radar-blip flood"></div>
+    <div class="radar-blip drone"></div>
+  </div>
+
+  <p class="hero-desc">
+    Real-time AI-driven disaster response simulation integrating computer vision, multi-agent drone coordination, and A* pathfinding — built on FastAPI + React with live WebSocket communication.
+  </p>
+  <div class="hero-btns">
+    <a class="btn-primary" href="https://github.com/Thanyaravi/aegis-disaster-system" target="_blank">VIEW ON GITHUB</a>
+    <a class="btn-outline" href="#api">API DOCS</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-val">3</span><span class="stat-label">AUTONOMOUS DRONES</span></div>
+  <div class="stat-item"><span class="stat-val">300ms</span><span class="stat-label">SIMULATION STEP</span></div>
+  <div class="stat-item"><span class="stat-val">10×10</span><span class="stat-label">GRID RESOLUTION</span></div>
+  <div class="stat-item"><span class="stat-val">60FPS</span><span class="stat-label">RADAR RENDER</span></div>
+  <div class="stat-item"><span class="stat-val">&lt;10ms</span><span class="stat-label">PATH PLANNING</span></div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-head">
+    <span class="section-eyebrow">CORE CAPABILITIES</span>
+    <h2 class="section-title">PLATFORM <span>SYSTEMS</span></h2>
+  </div>
+  <div class="features">
+    <div class="feature-card" style="--c-accent:#00d4ff">
+      <span class="feature-icon">🎯</span>
+      <div class="feature-title">YOLO COMPUTER VISION</div>
+      <p class="feature-desc">YOLOv8-based perception engine detecting fire, flood, structure collapse, and persons in real time across the disaster grid.</p>
+      <span class="feature-tag">YOLOV8N · PYTORCH</span>
+    </div>
+    <div class="feature-card" style="--c-accent:#f5a623">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">MULTI-AGENT COORDINATION</div>
+      <p class="feature-desc">Intelligent drone agents with dynamic task assignment. Nearest available drone auto-assigned to each detection event by priority.</p>
+      <span class="feature-tag">PRIORITY QUEUE · GREEDY ASSIGN</span>
+    </div>
+    <div class="feature-card" style="--c-accent:#00ff88">
+      <span class="feature-icon">🛣️</span>
+      <div class="feature-title">A* PATH PLANNING</div>
+      <p class="feature-desc">Obstacle-aware A* pathfinding algorithm with per-assignment recalculation. Sub-10ms compute time per path on a 10×10 grid.</p>
+      <span class="feature-tag">A* ALGORITHM · &lt;10ms</span>
+    </div>
+    <div class="feature-card" style="--c-accent:#00d4ff">
+      <span class="feature-icon">📡</span>
+      <div class="feature-title">REAL-TIME WEBSOCKET</div>
+      <p class="feature-desc">Bidirectional WebSocket communication with automatic reconnection and exponential backoff. HTTP polling fallback for resilience.</p>
+      <span class="feature-tag">WS · HTTP FALLBACK</span>
+    </div>
+    <div class="feature-card" style="--c-accent:#ff3c3c">
+      <span class="feature-icon">🖥️</span>
+      <div class="feature-title">INTERACTIVE RADAR UI</div>
+      <p class="feature-desc">Canvas-based radar with live drone tracking, heat zone rendering, animated sweep effects, and click-to-deploy SOS at any grid coordinate.</p>
+      <span class="feature-tag">CANVAS · REACT · VITE</span>
+    </div>
+    <div class="feature-card" style="--c-accent:#f5a623">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">ALERT TRIAGE SYSTEM</div>
+      <p class="feature-desc">Priority-based alert system — FIRE (P3) → COLLAPSE (P2) → FLOOD (P1) → SOS (P0). Real-time event log with blinking critical state indicators.</p>
+      <span class="feature-tag">PRIORITY SORT · 30 EVENT LOG</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" style="max-width:1100px">
+  <div class="section-head">
+    <span class="section-eyebrow">SYSTEM DESIGN</span>
+    <h2 class="section-title">ARCHITECTURE <span>OVERVIEW</span></h2>
+  </div>
+  <div class="arch">
+    <div class="arch-col">
+      <div class="arch-col-title">FRONTEND</div>
+      <div class="arch-box highlight">App.jsx</div>
+      <div class="arch-box">RadarComponent.jsx</div>
+      <div class="arch-box">TelemetryPanel.jsx</div>
+      <div class="arch-box">AlertSystem.jsx</div>
+      <div class="arch-box" style="margin-top:0.5rem;font-size:11px;color:var(--c-text2);border:none;background:transparent;padding-left:0">React 19 + Vite · CSS Modules</div>
+    </div>
+    <div class="arch-arrow">⇄</div>
+    <div class="arch-col">
+      <div class="arch-col-title">BACKEND CORE</div>
+      <div class="arch-box highlight">api/server.py</div>
+      <div class="arch-box">core/agent.py</div>
+      <div class="arch-box">core/path_planning.py</div>
+      <div class="arch-box">core/grid_engine.py</div>
+      <div class="arch-box">core/yolo_engine.py</div>
+      <div class="arch-box" style="margin-top:0.5rem;font-size:11px;color:var(--c-text2);border:none;background:transparent;padding-left:0">FastAPI · Uvicorn · Python 3.9+</div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);padding:1rem;border-left:3px solid var(--c-cyan)">
+      <div style="font-family:var(--font-hud);font-size:10px;color:var(--c-cyan);letter-spacing:0.2em;margin-bottom:8px">COMMUNICATION</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text)">WS ws://host:8000/ws</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text);margin-top:4px">HTTP http://host:8000</div>
+    </div>
+    <div style="flex:1;min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);padding:1rem;border-left:3px solid var(--c-amber)">
+      <div style="font-family:var(--font-hud);font-size:10px;color:var(--c-amber);letter-spacing:0.2em;margin-bottom:8px">SIMULATION LOOP</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text)">main.py → 300ms steps</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text);margin-top:4px">15% disaster spawn rate</div>
+    </div>
+    <div style="flex:1;min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);padding:1rem;border-left:3px solid var(--c-green)">
+      <div style="font-family:var(--font-hud);font-size:10px;color:var(--c-green);letter-spacing:0.2em;margin-bottom:8px">DEPLOYMENT</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text)">Frontend: Netlify / Vercel</div>
+      <div style="font-family:var(--font-hud);font-size:12px;color:var(--c-text);margin-top:4px">Backend: Railway / Render</div>
+    </div>
+  </div>
+</section>
+
+<!-- DRONE STATUS -->
+<section>
+  <div class="section-head">
+    <span class="section-eyebrow">LIVE TELEMETRY MOCK</span>
+    <h2 class="section-title">DRONE <span>NETWORK STATUS</span></h2>
+  </div>
+  <div class="drones">
+    <div class="drone-card">
+      <div class="drone-id">UNIT // DRONE-01</div>
+      <div class="drone-status">Alpha Scout</div>
+      <div class="drone-stat">GRID POS <span>[5,7]</span></div>
+      <div class="drone-stat">TARGET <span>FIRE [3,8]</span></div>
+      <div class="drone-stat">DISTANCE <span>3 cells</span></div>
+      <div class="drone-stat">BATTERY <span>82%</span></div>
+      <span class="drone-badge badge-en-route">EN-ROUTE</span>
+    </div>
+    <div class="drone-card">
+      <div class="drone-id">UNIT // DRONE-02</div>
+      <div class="drone-status">Beta Response</div>
+      <div class="drone-stat">GRID POS <span>[2,2]</span></div>
+      <div class="drone-stat">TARGET <span>FLOOD [2,6]</span></div>
+      <div class="drone-stat">DISTANCE <span>4 cells</span></div>
+      <div class="drone-stat">BATTERY <span>91%</span></div>
+      <span class="drone-badge badge-active">ACTIVE</span>
+    </div>
+    <div class="drone-card">
+      <div class="drone-id">UNIT // DRONE-03</div>
+      <div class="drone-status">Gamma Standby</div>
+      <div class="drone-stat">GRID POS <span>[9,9]</span></div>
+      <div class="drone-stat">TARGET <span>NONE</span></div>
+      <div class="drone-stat">DISTANCE <span>—</span></div>
+      <div class="drone-stat">BATTERY <span>100%</span></div>
+      <span class="drone-badge badge-idle">IDLE</span>
+    </div>
+  </div>
+</section>
+
+<!-- API REFERENCE -->
+<section id="api" style="max-width:1100px">
+  <div class="section-head">
+    <span class="section-eyebrow">REST API</span>
+    <h2 class="section-title">ENDPOINT <span>REFERENCE</span></h2>
+  </div>
+  <table class="api-table">
+    <thead>
+      <tr>
+        <th>METHOD</th>
+        <th>ENDPOINT</th>
+        <th>DESCRIPTION</th>
+        <th>RESPONSE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/state</td>
+        <td>Full simulation state — drones, detections, events, alerts</td>
+        <td style="font-family:var(--font-hud);color:var(--c-text2);font-size:11px">JSON: drones[], detections[], events[], alert, step</td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/health</td>
+        <td>System health check for uptime monitoring</td>
+        <td style="font-family:var(--font-hud);color:var(--c-text2);font-size:11px">JSON: status, timestamp</td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/update</td>
+        <td>Push simulation state update from backend loop</td>
+        <td style="font-family:var(--font-hud);color:var(--c-text2);font-size:11px">JSON: ok</td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/sos</td>
+        <td>Manually trigger SOS at grid coordinate pos:[x,y]</td>
+        <td style="font-family:var(--font-hud);color:var(--c-text2);font-size:11px">JSON: triggered, pos</td>
+      </tr>
+      <tr>
+        <td><span class="method get">WS</span></td>
+        <td class="endpoint">/ws</td>
+        <td>Bidirectional WebSocket — real-time state broadcast</td>
+        <td style="font-family:var(--font-hud);color:var(--c-text2);font-size:11px">Stream: state events</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- CTA / DEPLOY -->
+<div class="cta-section" id="deploy">
+  <h2 class="cta-title">DEPLOY AEGIS IN MINUTES</h2>
+  <p class="cta-desc">Clone the repo, spin up the backend and frontend — the simulation loop runs automatically. Full local or cloud deployment supported.</p>
+  <div style="background:var(--c-bg);border:1px solid var(--c-border2);padding:1rem 1.5rem;font-family:var(--font-hud);font-size:13px;color:var(--c-cyan);max-width:480px;margin:0 auto 2.5rem;text-align:left">
+    <div style="color:var(--c-text2);margin-bottom:8px;font-size:11px">QUICKSTART</div>
+    <div style="color:var(--c-text2)">$ <span style="color:var(--c-cyan)">git clone https://github.com/Thanyaravi/aegis-disaster-system</span></div>
+    <div style="margin-top:6px;color:var(--c-text2)">$ <span style="color:#fff">cd backend && uvicorn api.server:app --reload</span></div>
+    <div style="margin-top:6px;color:var(--c-text2)">$ <span style="color:#fff">cd frontend/aegis-ui && npm run dev</span></div>
+    <div style="margin-top:6px;color:var(--c-text2)">$ <span style="color:#fff">python main.py</span></div>
+  </div>
+  <div class="cta-links">
+    <a class="cta-link-card" href="https://github.com/Thanyaravi/aegis-disaster-system" target="_blank">
+      <span class="link-icon">⌥</span>
+      <div>
+        <span class="link-label">GITHUB REPOSITORY</span>
+        <span class="link-sub">Source code & docs</span>
+      </div>
+    </a>
+    <a class="cta-link-card" href="https://github.com/Thanyaravi/aegis-disaster-system/blob/main/QUICKSTART.md" target="_blank">
+      <span class="link-icon">▶</span>
+      <div>
+        <span class="link-label">QUICKSTART GUIDE</span>
+        <span class="link-sub">Get running in 5 minutes</span>
+      </div>
+    </a>
+    <a class="cta-link-card" href="https://github.com/Thanyaravi/aegis-disaster-system/blob/main/DEPLOYMENT_GUIDE.md" target="_blank">
+      <span class="link-icon">☁</span>
+      <div>
+        <span class="link-label">DEPLOYMENT GUIDE</span>
+        <span class="link-sub">Cloud deployment steps</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">▲ AEGIS</div>
+  <div class="footer-text">AUTONOMOUS EMERGENCY GRID INTELLIGENCE SYSTEM · MIT LICENSE</div>
+  <div class="footer-links">
+    <a href="https://github.com/Thanyaravi/aegis-disaster-system" target="_blank">GITHUB</a>
+    <a href="https://github.com/Thanyaravi/aegis-disaster-system/blob/main/README.md" target="_blank">README</a>
+    <a href="https://github.com/Thanyaravi/aegis-disaster-system/blob/main/COMPLETION_REPORT.md" target="_blank">REPORT</a>
+  </div>
+</footer>
+
+</body>
+</html>
